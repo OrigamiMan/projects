@@ -1,0 +1,146 @@
+import csv
+from re import T
+import turtle as t
+
+t.speed(0)
+Lock = False
+
+def locked(f):
+    def wrapper(self, x, y):
+        global Lock
+        if Lock:
+            return
+        Lock = True
+        f(self, x, y)
+        Lock = False
+    return wrapper
+
+class Game:
+    def __init__(self, cell_size):
+        self.current_player = True
+        self.cell_size = cell_size 
+        self.ocupied_cells = []
+        self.winner = None               
+    
+    def transfer_turtle(self, y, x):
+        t.penup()
+        t.setpos(x, y)
+        t.pendown()
+    
+    def draw_board(self):
+        transfer_turtle = self.transfer_turtle
+        cell_size = self.cell_size
+        transfer_turtle(cell_size/2, -cell_size*1.5)
+        t.forward(cell_size*3)
+        transfer_turtle(-cell_size/2, -cell_size*1.5)
+        t.forward(cell_size*3)
+        t.right(90)
+        transfer_turtle(cell_size*1.5, -cell_size/2)
+        t.forward(cell_size*3)
+        transfer_turtle(cell_size*1.5, cell_size/2)
+        t.forward(cell_size*3)
+        t.right(180)
+
+    def find_centre(self, x, y):
+        return x, y
+
+    def draw_cross(self, x, y, cross_length):
+        self.transfer_turtle(y, x)
+        t.right(45)
+        t.forward(cross_length/2)
+        t.back(cross_length)
+        t.forward(cross_length/2)
+        t.right(90)
+        t.forward(cross_length/2)
+        t.back(cross_length)
+        t.forward(cross_length/2)
+        t.left(135)
+        
+
+    def draw_circle(self, x, y, radius):
+        self.transfer_turtle(y, x + radius)
+        t.circle(radius)
+        
+
+    @locked
+    def each_click(self, x, y):
+        if self.winner is not None:
+            return
+        cs = self.cell_size
+        cells = [-cs, 0, cs]
+        x = x + 1.5 * cs
+        y = y + 1.5 * cs
+        cell_x = int(x // cs)
+        cell_y = int(y // cs)
+        if 0>cell_x or 2<cell_x or 0>cell_y or 2<cell_y:
+            return
+        if (cell_x, cell_y) in [(cell_x, cell_y) for cell_x, cell_y, _ in self.ocupied_cells]:
+            return
+        if self.current_player:
+            self.draw_cross(cells[cell_x], cells[cell_y], self.cell_size)
+        else:
+            self.draw_circle(cells[cell_x], cells[cell_y], self.cell_size*0.4)
+        self.ocupied_cells.append((cell_x, cell_y, self.current_player))
+        self.detect_winner()
+        self.current_player = not self.current_player
+    
+    def detect_winner(self):
+        for y_coord in (0, 1, 2):
+            current_row = []
+            for cell in self.ocupied_cells:
+                if y_coord == cell[1]:
+                    current_row.append(cell[2])
+            if len(current_row) == 3 and len(set(current_row)) == 1:
+                self.winner = current_row[0]
+                if current_row[0] == True:
+                    print("Player 1 Wins")
+                elif current_row[0] == False:
+                    print("Player 2 Wins")
+        for x_coord in (0, 1, 2):
+            current_col = []
+            for cell in self.ocupied_cells:
+                if x_coord == cell[0]:
+                    current_col.append(cell[2])
+            if len(current_col) == 3 and len(set(current_col)) == 1:
+                self.winner = current_col[0]
+                if current_col[0] == True:
+                    print("Player 1 Wins")
+                elif current_col[0] == False:
+                    print("Player 2 Wins")
+            
+            left_diag = []
+            right_diag = []
+            left_diag_coords = [(0, 2), (1, 1), (2, 0)]
+            right_diag_coords = [(0, 0), (1, 1), (2, 2)]
+            for cell in self.ocupied_cells:
+                if (cell[0], cell[1]) in left_diag_coords:
+                    left_diag.append(cell[2])
+                if (cell[0], cell[1]) in right_diag_coords:
+                    right_diag.append(cell[2])
+                if len(left_diag) == 3 and len(set(left_diag)) == 1:
+                    self.winner = left_diag[0]
+                    if left_diag[0] == True:
+                        print("Player 1 Wins")
+                    elif left_diag[0] == False:
+                        print("Player 2 Wins")
+                    return
+                if len(right_diag) == 3 and len(set(right_diag)) == 1:
+                    self.winner = right_diag[0]
+                    if right_diag[0] == True:
+                        print("Player 1 Wins")
+                    elif right_diag[0] == False:
+                        print("Player 2 Wins")
+                    return
+                if len(self.ocupied_cells) == 9 and self.winner == None:
+                    print("Tie")
+
+    def start(self):
+        t.onscreenclick(self.each_click)
+
+#====================================================================================
+
+game = Game(cell_size = 150)
+game.draw_board()
+game.start()   
+
+t.mainloop()
